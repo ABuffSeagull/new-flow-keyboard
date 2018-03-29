@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Resources
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.drawable.ShapeDrawable
@@ -40,16 +39,16 @@ class NewFlowView(context: Context) : View(context) {
 	}
 
 	init {
-		background.paint.color = resources.getColor(R.color.abc_primary_text_material_dark) // TODO: deprecated
+		background.paint.color = resources.getColor(R.color.background_material_light) // TODO: deprecated
 		circleList.forEach { it.paint.color = 0xFF0021A5.toInt() }
 		for (paint in paintArray) {
-			paint.textSize = 70f
+			paint.textSize = 70f // TODO: This should be sized according to the screen?
 			paint.textAlign = Paint.Align.CENTER
 			paint.flags = Paint.ANTI_ALIAS_FLAG
 		}
 		keyRegions.filter { "aeiou".contains(it.char) }.forEach { it.paintIndex = 1 }
-		paintArray[0].color = Color.BLACK
-		paintArray[1].color = Color.WHITE
+		paintArray[0].color = resources.getColor(R.color.abc_primary_text_material_light)
+		paintArray[1].color = resources.getColor(R.color.abc_primary_text_material_dark)
 	}
 
 	private fun getCircleBounds(x: Int, y: Int) =
