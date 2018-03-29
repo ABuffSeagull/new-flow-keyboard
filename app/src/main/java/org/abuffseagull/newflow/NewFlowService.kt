@@ -11,6 +11,7 @@ import android.view.inputmethod.EditorInfo
 const val TAG = "FlowTag"
 
 class NewFlowService : InputMethodService() {
+	private lateinit var newFlowView: NewFlowView
 
 	override fun onCreate() {
 		Log.i(TAG, "onCreate called\n")
@@ -59,7 +60,8 @@ class NewFlowService : InputMethodService() {
 	override fun onCreateInputView(): View {
 		Log.i(TAG, "onCreateInputView called\n")
 //		return mView // This creates the view the first time, cause it is lazy
-		return NewFlowView(applicationContext)
+		newFlowView = NewFlowView(this)
+		return newFlowView
 	}
 
 	/**
@@ -85,7 +87,8 @@ class NewFlowService : InputMethodService() {
 	override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
 		Log.i(TAG, "onStartInputView called, restarting: $restarting")
 		super.onStartInputView(info, restarting)
-		setInputView(NewFlowView(applicationContext)) // TODO: This is for debug purposes, remove/replace
+		newFlowView = NewFlowView(this)
+		setInputView(newFlowView) // TODO: This is for debug purposes, remove/replace
 	}
 
 
@@ -120,8 +123,8 @@ class NewFlowService : InputMethodService() {
 	 * this point. Upon return, there will be no more calls in to this Service object and it is
 	 * effectively dead. Do not call this method directly.
 	 */
-	override fun onDestroy() {
-		Log.i(TAG, "onDestroy called\n")
-		super.onDestroy()
-	}
+//	override fun onDestroy() {
+//		Log.i(TAG, "onDestroy called\n")
+//		super.onDestroy()
+//	}
 }
