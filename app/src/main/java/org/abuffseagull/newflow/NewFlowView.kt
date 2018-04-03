@@ -33,17 +33,23 @@ const val BACKSPACE_INDEX = 0 * 7 + 6
 const val SHIFT_INDEX = 4 * 7 + 0
 const val ENTER_INDEX = 4 * 7 + 6
 const val SPACE_INDEX = 1 * 7 + 6
+const val SECONDARY_INDEX = 3 * 7 + 0
 
 class NewFlowView(context: Context) : View(context) {
 	private val background = ShapeDrawable(RectShape())
 	private val circleList = Array(5) { ShapeDrawable(OvalShape()) }
 	private val keyRegions = Array(5 * 7) { KeyRegion(KEY_LIST[it]) }
-	private val keyRegionsSecondary = Array(5 * 7) { KeyRegion(char = KEY_LIST_SECONDARY[it], paintIndex = 2) }
+	private val keyRegionsSecondary = Array(5 * 7) { KeyRegion(KEY_LIST_SECONDARY[it]) }
 	private var keyboardHeight = 0
 	private val paintArray = Array(4) { Paint() }
-	private var uppercase: Boolean = true
+	private var uppercaseToggle: Boolean = true
 		set(value) {
 			invalidate() // redraw the keyboard when changing case
+			field = value
+		}
+	private var secondaryToggle: Boolean = false
+		set(value) {
+			invalidate()
 			field = value
 		}
 	private val iconBackspace = VectorDrawableCompat.create(resources, R.drawable.backspace_icon, null) as VectorDrawableCompat
@@ -69,7 +75,10 @@ class NewFlowView(context: Context) : View(context) {
 		paintArray.forEachIndexed { index, paint -> paint.color = colorArray.getColor(index + 1, 0xFF00FF) }
 		colorArray.recycle()
 
-		circleList.forEach { it.paint.color = resources.getColor(R.color.primary) }
+		circleList.forEach {
+			@Suppress("DEPRECATION")
+			it.paint.color = resources.getColor(R.color.primary)
+		}
 		for (paint in paintArray) {
 			paint.textAlign = Paint.Align.CENTER
 			paint.flags = Paint.ANTI_ALIAS_FLAG
@@ -80,10 +89,11 @@ class NewFlowView(context: Context) : View(context) {
 		paintArray[2].textSize = 50f
 		paintArray[3].textSize = 50f
 		keyRegions.filter { "aeiou".contains(it.char) }.forEach { it.paintIndex = 1 }
-		keyRegionsSecondary.filter { "24569".contains(it.char) }.forEach { it.paintIndex = 3 }
+		keyRegionsSecondary.filter { "24569".contains(it.char) }.forEach { it.paintIndex = 1 }
 		keyRegions[BACKSPACE_INDEX].function = { inputConnection.deleteSurroundingText(1, 0) }
-		keyRegions[SHIFT_INDEX].function = { uppercase = !uppercase }
+		keyRegions[SHIFT_INDEX].function = { uppercaseToggle = !uppercaseToggle }
 		keyRegions[ENTER_INDEX].function = { inputConnection.performEditorAction(EditorInfo.IME_ACTION_DONE) }
+		keyRegions[SECONDARY_INDEX].function = { secondaryToggle = !secondaryToggle }
 	}
 
 	private fun getBounds(pair: Pair<Int, Int>, padding: Int = 0) = Rect(
@@ -95,7 +105,7 @@ class NewFlowView(context: Context) : View(context) {
 
 	private fun getBounds(index: Int, padding: Int = 0) = Rect(
 			(index % 7) * circleSize + padding,
-			index / 7 * circleSize + padding,
+			(index / 7) * circleSize + padding,
 			(index % 7 + 1) * circleSize - padding,
 			(index / 7 + 1) * circleSize - padding
 	)
@@ -132,20 +142,22 @@ class NewFlowView(context: Context) : View(context) {
 		circleList.forEach { it.draw(canvas) }
 		// TODO: these numbers suck, un-magic-ify them
 		// TODO: Look into static layouts, maybe better for performance?
-		keyRegions.forEach {
+		val primaryDisplayArray = if (secondaryToggle) keyRegionsSecondary else keyRegions
+		val secondaryDisplayArray = if (secondaryToggle) keyRegions else keyRegionsSecondary
+		primaryDisplayArray.forEach {
 			canvas.drawText(
-					if (uppercase) it.char.toUpperCase().toString() else it.char.toString(),
+					(if (uppercaseToggle) it.char.toUpperCase() else it.char).toString(),
 					it.rect.exactCenterX() - 10f,
 					it.rect.exactCenterY() + 35f,
 					paintArray[it.paintIndex]
 			)
 		}
-		keyRegionsSecondary.forEach {
+		secondaryDisplayArray.forEach {
 			canvas.drawText(
-					it.char.toString(),
+					(if (uppercaseToggle) it.char.toUpperCase() else it.char).toString(),
 					it.rect.exactCenterX() + 35f,
 					it.rect.exactCenterY() - 5f,
-					paintArray[it.paintIndex]
+					paintArray[it.paintIndex + 2]
 			)
 		}
 		iconBackspace.draw(canvas)
@@ -163,17 +175,18 @@ class NewFlowView(context: Context) : View(context) {
 		if (event == null) return true
 		val indexFound = keyRegions.indexOfFirst { it.rect.contains(event.x.roundToInt(), event.y.roundToInt()) }
 		if (indexFound < 0) return true
-		val keyRegion = keyRegions[indexFound]
-//		val keyRegion = keyRegions.find { it.rect.contains(event.x.roundToInt(), event.y.roundToInt()) }
-//				?: return true
+		val keyCharPrimary = (if (secondaryToggle) keyRegionsSecondary[indexFound] else keyRegions[indexFound]).char
+		val keyCharSecondary = (if (secondaryToggle) keyRegions[indexFound] else keyRegionsSecondary[indexFound]).char
+		val keyFunction = keyRegions[indexFound].function
+				?: keyRegionsSecondary[indexFound].function
 		when (event.action) {
 			ACTION_DOWN -> {
 				alreadyCommitted = false
-				if (keyRegion.function != null) return true
+				if (keyFunction != null) return true
 				downRunnable = Runnable {
-					inputConnection.commitText(keyRegionsSecondary[indexFound].char.toString(), 1)
+					inputConnection.commitText(keyCharSecondary.toString(), 1)
 					alreadyCommitted = true
-					uppercase = false
+					uppercaseToggle = false
 				}
 				postDelayed(downRunnable, 1000) // TODO: un-magic-ify this and maybe move to own handler for own thread?
 			}
@@ -183,9 +196,9 @@ class NewFlowView(context: Context) : View(context) {
 					downRunnable = null
 				}
 				if (alreadyCommitted) return true
-				keyRegion.function?.let { it(); return true }
-				inputConnection.commitText(if (uppercase) keyRegion.char.toUpperCase().toString() else keyRegion.char.toString(), 1)
-				uppercase = false
+				keyFunction?.let { it(); return true }
+				inputConnection.commitText(if (uppercaseToggle) keyCharPrimary.toUpperCase().toString() else keyCharPrimary.toString(), 1)
+				uppercaseToggle = false
 			}
 			ACTION_MOVE -> Log.i(TAG, "Finger move")
 			else -> Log.i(TAG, "What did I get? $event")
