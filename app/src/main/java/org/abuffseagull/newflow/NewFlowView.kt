@@ -9,24 +9,29 @@ import android.graphics.Rect
 import android.graphics.drawable.ShapeDrawable
 import android.graphics.drawable.shapes.OvalShape
 import android.graphics.drawable.shapes.RectShape
+import android.support.graphics.drawable.VectorDrawableCompat
 import android.util.Log
 import android.view.MotionEvent
 import android.view.MotionEvent.*
 import android.view.View
+import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
 import kotlin.math.roundToInt
-import kotlin.properties.Delegates
 
 /**
  * This is the View class for the keyboard, which shows everything on screen
  * Created by abuffseagull on 3/28/18.
  */
 
-const val PADDING = 5
+data class KeyRegion(val char: Char, val rect: Rect = Rect(), var paintIndex: Int = 0, var function: (() -> Unit)? = null)
 
-data class KeyRegion(val char: Char, val rect: Rect = Rect(), var paintIndex: Int = 0)
+const val KEY_LIST = "?xwvyb ,therm .caiolp#ksnudj z'gfq "
 
-const val KEY_LIST = "?xwvyb<,therm .caiolp1ksnudj^z'gfq#"
+// row * 7 + column
+const val BACKSPACE_INDEX = 0 * 7 + 6
+const val SHIFT_INDEX = 4 * 7 + 0
+const val ENTER_INDEX = 4 * 7 + 6
+const val SPACE_INDEX = 1 * 7 + 6
 
 class NewFlowView(context: Context) : View(context) {
 	private val background = ShapeDrawable(RectShape())
@@ -34,11 +39,21 @@ class NewFlowView(context: Context) : View(context) {
 	private val keyRegions = Array(5 * 7) { KeyRegion(KEY_LIST[it]) }
 	private var keyboardHeight = 0
 	private val paintArray = Array(2) { Paint() }
+	private var uppercase: Boolean = true
+		set(value) {
+			invalidate() // redraw the keyboard when changing case
+			field = value
+		}
+	private val backspaceIcon = VectorDrawableCompat.create(resources, R.drawable.backspace_icon, null) as VectorDrawableCompat
+	private val shiftIcon = VectorDrawableCompat.create(resources, R.drawable.shift_icon, null) as VectorDrawableCompat
+	private val enterIcon = VectorDrawableCompat.create(resources, R.drawable.enter_icon, null) as VectorDrawableCompat
+	private val spaceIcon = VectorDrawableCompat.create(resources, R.drawable.space_icon, null) as VectorDrawableCompat
 
-	private var circleSize: Int by Delegates.observable(0) { _, _, newValue ->
-		// TODO: this might be overkill
-		keyboardHeight = newValue * 5
-	}
+	private var circleSize: Int = 0
+		set(value) {
+			keyboardHeight = value * 5
+			field = value
+		}
 
 	init {
 		val colorArray = context.theme.obtainStyledAttributes(intArrayOf(
@@ -58,36 +73,42 @@ class NewFlowView(context: Context) : View(context) {
 			paint.flags = Paint.ANTI_ALIAS_FLAG
 		}
 		keyRegions.filter { "aeiou".contains(it.char) }.forEach { it.paintIndex = 1 }
+		keyRegions[BACKSPACE_INDEX].function = { inputConnection.deleteSurroundingText(1, 0) }
+		keyRegions[SHIFT_INDEX].function = { uppercase = !uppercase }
+		keyRegions[ENTER_INDEX].function = { inputConnection.performEditorAction(EditorInfo.IME_ACTION_DONE) }
 	}
 
-	private fun getCircleBounds(x: Int, y: Int) =
-			Rect(
-					x * circleSize + PADDING,
-					y * circleSize + PADDING,
-					(x + 1) * circleSize - PADDING,
-					(y + 1) * circleSize - PADDING
-			)
+	private fun getBounds(pair: Pair<Int, Int>, padding: Int = 0) = Rect(
+			pair.first * circleSize + padding,
+			pair.second * circleSize + padding,
+			(pair.first + 1) * circleSize - padding,
+			(pair.second + 1) * circleSize - padding
+	)
+
+	private fun getBounds(index: Int, padding: Int = 0) = Rect(
+			(index % 7) * circleSize + padding,
+			index / 7 * circleSize + padding,
+			(index % 7 + 1) * circleSize - padding,
+			(index / 7 + 1) * circleSize - padding
+	)
 
 	/**
 	 * This is called during layout when the size of this view has changed.
 	 * width and height SHOULD be the size of the entire screen, but not completely sure
 	 */
 	override fun onSizeChanged(width: Int, height: Int, oldw: Int, oldh: Int) {
-		circleList[0].bounds = getCircleBounds(3, 1)
-		circleList[1].bounds = getCircleBounds(2, 2)
-		circleList[2].bounds = getCircleBounds(3, 2)
-		circleList[3].bounds = getCircleBounds(4, 2)
-		circleList[4].bounds = getCircleBounds(4, 3)
+		val padding = 5
+		circleList[0].bounds = getBounds(Pair(3, 1), padding)
+		circleList[1].bounds = getBounds(Pair(2, 2), padding)
+		circleList[2].bounds = getBounds(Pair(3, 2), padding)
+		circleList[3].bounds = getBounds(Pair(4, 2), padding)
+		circleList[4].bounds = getBounds(Pair(4, 3), padding)
 		background.setBounds(0, 0, width, height)
-		keyRegions.forEachIndexed { i, keyRegion ->
-			keyRegion.rect.set(
-					(i % 7) * circleSize,
-					i / 7 * circleSize,
-					(i % 7 + 1) * circleSize,
-					(i / 7 + 1) * circleSize
-			)
-		}
-
+		keyRegions.forEachIndexed { i, keyRegion -> keyRegion.rect.set(getBounds(i)) }
+		backspaceIcon.bounds = getBounds(BACKSPACE_INDEX, circleSize / 4)
+		shiftIcon.bounds = getBounds(SHIFT_INDEX, circleSize / 4)
+		enterIcon.bounds = getBounds(ENTER_INDEX, circleSize / 4)
+		spaceIcon.bounds = getBounds(SPACE_INDEX, circleSize / 4)
 	}
 
 	override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -96,36 +117,41 @@ class NewFlowView(context: Context) : View(context) {
 		setMeasuredDimension(Resources.getSystem().displayMetrics.widthPixels, circleSize * 5)
 	}
 
-
 	override fun onDraw(canvas: Canvas?) {
 		if (canvas == null) return
 		background.draw(canvas)
 		circleList.forEach { it.draw(canvas) }
 		keyRegions.forEach {
 			canvas.drawText( // TODO: probably also change this to StaticLayout
-					it.char.toString(),
+					if (uppercase) it.char.toUpperCase().toString() else it.char.toString(),
 					it.rect.exactCenterX(),
 					it.rect.exactCenterY() + 20f, // TODO: un-magic-ify this number
 					paintArray[it.paintIndex]
 			)
 		}
+		backspaceIcon.draw(canvas)
+		shiftIcon.draw(canvas)
+		enterIcon.draw(canvas)
+		spaceIcon.draw(canvas)
 	}
 
 	lateinit var inputConnection: InputConnection
 	private var downRunnable: Runnable? = null
-	private var alreadyCommited = false
+	private var alreadyCommitted = false
 	// TODO: Make the click override or whatever
 	@SuppressLint("ClickableViewAccessibility")
 	override fun onTouchEvent(event: MotionEvent?): Boolean {
 		if (event == null) return true
-		val (char) = keyRegions.find { it.rect.contains(event.x.roundToInt(), event.y.roundToInt()) }
+		val keyRegion = keyRegions.find { it.rect.contains(event.x.roundToInt(), event.y.roundToInt()) }
 				?: return true
 		when (event.action) {
 			ACTION_DOWN -> {
-				alreadyCommited = false
+				alreadyCommitted = false
+				if (keyRegion.function != null) return true
 				downRunnable = Runnable {
-					inputConnection.commitText(char.toUpperCase().toString(), 1)
-					alreadyCommited = true
+					inputConnection.commitText(keyRegion.char.toUpperCase().toString(), 1)
+					alreadyCommitted = true
+					uppercase = false
 				}
 				postDelayed(downRunnable, 1000) // TODO: un-magic-ify this and maybe move to own handler for own thread?
 			}
@@ -134,9 +160,10 @@ class NewFlowView(context: Context) : View(context) {
 					removeCallbacks(downRunnable)
 					downRunnable = null
 				}
-				if (alreadyCommited) return true
-				if (char == '<') inputConnection.deleteSurroundingText(1, 0)
-				else inputConnection.commitText(char.toString(), 1)
+				if (alreadyCommitted) return true
+				keyRegion.function?.let { it(); return true }
+				inputConnection.commitText(if (uppercase) keyRegion.char.toUpperCase().toString() else keyRegion.char.toString(), 1)
+				uppercase = false
 			}
 			ACTION_MOVE -> Log.i(TAG, "Finger move")
 			else -> Log.i(TAG, "What did I get? $event")
