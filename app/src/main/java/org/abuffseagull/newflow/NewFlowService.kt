@@ -57,13 +57,7 @@ class NewFlowService : InputMethodService() {
 	 * To control when the input view is displayed, implement onEvaluateInputViewShown(). To change
 	 * the input view after the first one is created by this function, use setInputView(View).
 	 */
-	override fun onCreateInputView(): View {
-		Log.i(TAG, "onCreateInputView called\n")
-//		return mView // This creates the view the first time, cause it is lazy
-		newFlowView = NewFlowView(this)
-		newFlowView.inputConnection = currentInputConnection
-		return newFlowView
-	}
+	override fun onCreateInputView() = NewFlowView(this).apply { inputConnection = currentInputConnection }.also { newFlowView = it }
 
 	/**
 	 * Create and return the view hierarchy used to show candidates. This will be called once,
@@ -87,10 +81,7 @@ class NewFlowService : InputMethodService() {
 	 */
 	override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
 		Log.i(TAG, "onStartInputView called, restarting: $restarting")
-		super.onStartInputView(info, restarting)
-		newFlowView = NewFlowView(this)
 		newFlowView.inputConnection = currentInputConnection
-		setInputView(newFlowView) // TODO: This is for debug purposes, remove/replace
 	}
 
 
