@@ -82,6 +82,7 @@ class NewFlowService : InputMethodService() {
 	override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
 		Log.i(TAG, "onStartInputView called, restarting: $restarting")
 		newFlowView.inputConnection = currentInputConnection
+		newFlowView.reset()
 	}
 
 

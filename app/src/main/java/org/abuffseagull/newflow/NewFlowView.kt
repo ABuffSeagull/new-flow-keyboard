@@ -96,6 +96,11 @@ class NewFlowView(context: Context) : View(context) {
 		keyRegions[SECONDARY_INDEX].function = { secondaryToggle = !secondaryToggle }
 	}
 
+	fun reset() {
+		uppercaseToggle = true
+		secondaryToggle = false
+	}
+
 	private fun getBounds(pair: Pair<Int, Int>, padding: Int = 0) = Rect(
 			pair.first * circleSize + padding,
 			pair.second * circleSize + padding,
