@@ -71,10 +71,14 @@ class NewFlowView(context: Context) : View(context) {
 
 		circleList.forEach { it.paint.color = resources.getColor(R.color.primary) }
 		for (paint in paintArray) {
-			paint.textSize = 70f // TODO: This should be sized according to the screen?
 			paint.textAlign = Paint.Align.CENTER
 			paint.flags = Paint.ANTI_ALIAS_FLAG
 		}
+		// TODO: should these be sized according to the screen?
+		paintArray[0].textSize = 70f
+		paintArray[1].textSize = 70f
+		paintArray[2].textSize = 50f
+		paintArray[3].textSize = 50f
 		keyRegions.filter { "aeiou".contains(it.char) }.forEach { it.paintIndex = 1 }
 		keyRegionsSecondary.filter { "24569".contains(it.char) }.forEach { it.paintIndex = 3 }
 		keyRegions[BACKSPACE_INDEX].function = { inputConnection.deleteSurroundingText(1, 0) }
@@ -126,15 +130,24 @@ class NewFlowView(context: Context) : View(context) {
 		if (canvas == null) return
 		background.draw(canvas)
 		circleList.forEach { it.draw(canvas) }
+		// TODO: these numbers suck, un-magic-ify them
+		// TODO: Look into static layouts, maybe better for performance?
 		keyRegions.forEach {
-			canvas.drawText( // TODO: probably also change this to StaticLayout
+			canvas.drawText(
 					if (uppercase) it.char.toUpperCase().toString() else it.char.toString(),
-					it.rect.exactCenterX(),
-					it.rect.exactCenterY() + 20f, // TODO: un-magic-ify this number
+					it.rect.exactCenterX() - 10f,
+					it.rect.exactCenterY() + 35f,
 					paintArray[it.paintIndex]
 			)
 		}
-//		keyRegionsSecondary.forEach { canvas.drawText(it.char.toString(), it.rect.exactCenterX(), it.rect.exactCenterY(), paintArray[it.paintIndex]) }
+		keyRegionsSecondary.forEach {
+			canvas.drawText(
+					it.char.toString(),
+					it.rect.exactCenterX() + 35f,
+					it.rect.exactCenterY() - 5f,
+					paintArray[it.paintIndex]
+			)
+		}
 		iconBackspace.draw(canvas)
 		iconShift.draw(canvas)
 		iconEnter.draw(canvas)
