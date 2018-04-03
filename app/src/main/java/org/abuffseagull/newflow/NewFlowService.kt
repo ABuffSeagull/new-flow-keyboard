@@ -61,6 +61,7 @@ class NewFlowService : InputMethodService() {
 		Log.i(TAG, "onCreateInputView called\n")
 //		return mView // This creates the view the first time, cause it is lazy
 		newFlowView = NewFlowView(this)
+		newFlowView.inputConnection = currentInputConnection
 		return newFlowView
 	}
 
@@ -88,6 +89,7 @@ class NewFlowService : InputMethodService() {
 		Log.i(TAG, "onStartInputView called, restarting: $restarting")
 		super.onStartInputView(info, restarting)
 		newFlowView = NewFlowView(this)
+		newFlowView.inputConnection = currentInputConnection
 		setInputView(newFlowView) // TODO: This is for debug purposes, remove/replace
 	}
 

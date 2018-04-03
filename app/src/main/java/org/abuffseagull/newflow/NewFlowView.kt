@@ -11,8 +11,9 @@ import android.graphics.drawable.shapes.OvalShape
 import android.graphics.drawable.shapes.RectShape
 import android.util.Log
 import android.view.MotionEvent
-import android.view.MotionEvent.ACTION_UP
+import android.view.MotionEvent.*
 import android.view.View
+import android.view.inputmethod.InputConnection
 import kotlin.math.roundToInt
 import kotlin.properties.Delegates
 
@@ -33,6 +34,7 @@ class NewFlowView(context: Context) : View(context) {
 	private val keyRegions = Array(5 * 7) { KeyRegion(KEY_LIST[it]) }
 	private var keyboardHeight = 0
 	private val paintArray = Array(2) { Paint() }
+	lateinit var inputConnection: InputConnection
 
 	private var circleSize: Int by Delegates.observable(0) { _, _, newValue ->
 		keyboardHeight = newValue * 5
@@ -41,10 +43,10 @@ class NewFlowView(context: Context) : View(context) {
 	init {
 		background.paint.color = resources.getColor(R.color.background_material_light) // TODO: deprecated
 		circleList.forEach { it.paint.color = 0xFF0021A5.toInt() }
-		for (paint in paintArray) {
-			paint.textSize = 70f // TODO: This should be sized according to the screen?
-			paint.textAlign = Paint.Align.CENTER
-			paint.flags = Paint.ANTI_ALIAS_FLAG
+		paintArray.forEach {
+			it.textSize = 70f // TODO: This should be sized according to the screen?
+			it.textAlign = Paint.Align.CENTER
+			it.flags = Paint.ANTI_ALIAS_FLAG
 		}
 		keyRegions.filter { "aeiou".contains(it.char) }.forEach { it.paintIndex = 1 }
 		paintArray[0].color = resources.getColor(R.color.abc_primary_text_material_light)
@@ -90,11 +92,13 @@ class NewFlowView(context: Context) : View(context) {
 		setMeasuredDimension(Resources.getSystem().displayMetrics.widthPixels, circleSize * 5)
 	}
 
+
 	override fun onDraw(canvas: Canvas?) {
+		if (canvas == null) return
 		background.draw(canvas)
 		circleList.forEach { it.draw(canvas) }
 		keyRegions.forEach {
-			canvas?.drawText( // TODO: probably also change this to StaticLayout
+			canvas.drawText( // TODO: probably also change this to StaticLayout
 					it.char.toString(),
 					it.rect.exactCenterX(),
 					it.rect.exactCenterY() + 20f, // TODO: un-magic-ify this number
@@ -103,19 +107,38 @@ class NewFlowView(context: Context) : View(context) {
 		}
 	}
 
+	private var downRunnable: Runnable? = null
+	private var alreadyCommited = false
 	// TODO: Make the click override or whatever
 	@SuppressLint("ClickableViewAccessibility")
 	override fun onTouchEvent(event: MotionEvent?): Boolean {
 		if (event == null) return true
+		val (char) = keyRegions.find { it.rect.contains(event.x.roundToInt(), event.y.roundToInt()) }
+				?: return true
 		when (event.action) {
-//			ACTION_DOWN -> Log.i(TAG, "Finger down")
-			ACTION_UP -> {
-				val keyRegion = keyRegions.find { it.rect.contains(event.x.roundToInt(), event.y.roundToInt()) }
-				keyRegion?.let { Log.i(TAG, "${keyRegion.char}") }
+			ACTION_DOWN -> {
+				alreadyCommited = false
+				downRunnable = Runnable {
+					inputConnection.commitText(char.toUpperCase().toString(), 1)
+					alreadyCommited = true
+				}
+				Log.i(TAG, "Making and setting runnable $downRunnable")
+				postDelayed(downRunnable, 1000) // TODO: un-magic-ify this
 			}
-//			ACTION_MOVE -> Log.i(TAG, "Finger move")
-			else -> performClick()
+			ACTION_UP -> {
+				if (downRunnable != null) {
+					removeCallbacks(downRunnable)
+					downRunnable = null
+				}
+				if (alreadyCommited) return true
+				if (char == '<') inputConnection.deleteSurroundingText(1, 0)
+				else inputConnection.commitText(char.toString(), 1)
+			}
+			ACTION_MOVE -> Log.i(TAG, "Finger move")
+			else -> Log.i(TAG, "What did I get? $event")
 		}
 		return true
 	}
+
+
 }
