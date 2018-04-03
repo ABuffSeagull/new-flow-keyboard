@@ -34,23 +34,30 @@ class NewFlowView(context: Context) : View(context) {
 	private val keyRegions = Array(5 * 7) { KeyRegion(KEY_LIST[it]) }
 	private var keyboardHeight = 0
 	private val paintArray = Array(2) { Paint() }
-	lateinit var inputConnection: InputConnection
 
 	private var circleSize: Int by Delegates.observable(0) { _, _, newValue ->
+		// TODO: this might be overkill
 		keyboardHeight = newValue * 5
 	}
 
 	init {
-		background.paint.color = resources.getColor(R.color.background_material_light) // TODO: deprecated
-		circleList.forEach { it.paint.color = 0xFF0021A5.toInt() }
-		paintArray.forEach {
-			it.textSize = 70f // TODO: This should be sized according to the screen?
-			it.textAlign = Paint.Align.CENTER
-			it.flags = Paint.ANTI_ALIAS_FLAG
+		val colorArray = context.theme.obtainStyledAttributes(intArrayOf(
+				android.R.attr.colorBackground,
+				android.R.attr.textColorPrimary,
+				android.R.attr.textColorPrimaryInverse
+		))
+		background.paint.color = colorArray.getColor(0, 0xFF00FF)
+		paintArray[0].color = colorArray.getColor(1, 0xFF00FF) // TODO: what are these errors?
+		paintArray[1].color = colorArray.getColor(2, 0xFF00FF)
+		colorArray.recycle()
+
+		circleList.forEach { it.paint.color = resources.getColor(R.color.primary) }
+		for (paint in paintArray) {
+			paint.textSize = 70f // TODO: This should be sized according to the screen?
+			paint.textAlign = Paint.Align.CENTER
+			paint.flags = Paint.ANTI_ALIAS_FLAG
 		}
 		keyRegions.filter { "aeiou".contains(it.char) }.forEach { it.paintIndex = 1 }
-		paintArray[0].color = resources.getColor(R.color.abc_primary_text_material_light)
-		paintArray[1].color = resources.getColor(R.color.abc_primary_text_material_dark)
 	}
 
 	private fun getCircleBounds(x: Int, y: Int) =
@@ -83,9 +90,6 @@ class NewFlowView(context: Context) : View(context) {
 
 	}
 
-	/**
-	 *
-	 */
 	override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
 		val screenWidth = Resources.getSystem().displayMetrics.widthPixels
 		circleSize = screenWidth / 7
@@ -107,6 +111,7 @@ class NewFlowView(context: Context) : View(context) {
 		}
 	}
 
+	lateinit var inputConnection: InputConnection
 	private var downRunnable: Runnable? = null
 	private var alreadyCommited = false
 	// TODO: Make the click override or whatever
@@ -122,8 +127,7 @@ class NewFlowView(context: Context) : View(context) {
 					inputConnection.commitText(char.toUpperCase().toString(), 1)
 					alreadyCommited = true
 				}
-				Log.i(TAG, "Making and setting runnable $downRunnable")
-				postDelayed(downRunnable, 1000) // TODO: un-magic-ify this
+				postDelayed(downRunnable, 1000) // TODO: un-magic-ify this and maybe move to own handler for own thread?
 			}
 			ACTION_UP -> {
 				if (downRunnable != null) {
