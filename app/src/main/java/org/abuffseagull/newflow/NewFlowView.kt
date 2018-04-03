@@ -26,6 +26,7 @@ import kotlin.math.roundToInt
 data class KeyRegion(val char: Char, val rect: Rect = Rect(), var paintIndex: Int = 0, var function: (() -> Unit)? = null)
 
 const val KEY_LIST = "?xwvyb ,therm .caiolp#ksnudj z'gfq "
+const val KEY_LIST_SECONDARY = "!@()%   :123/  ;456+& $789-  =\"0#* "
 
 // row * 7 + column
 const val BACKSPACE_INDEX = 0 * 7 + 6
@@ -37,17 +38,18 @@ class NewFlowView(context: Context) : View(context) {
 	private val background = ShapeDrawable(RectShape())
 	private val circleList = Array(5) { ShapeDrawable(OvalShape()) }
 	private val keyRegions = Array(5 * 7) { KeyRegion(KEY_LIST[it]) }
+	private val keyRegionsSecondary = Array(5 * 7) { KeyRegion(char = KEY_LIST_SECONDARY[it], paintIndex = 2) }
 	private var keyboardHeight = 0
-	private val paintArray = Array(2) { Paint() }
+	private val paintArray = Array(4) { Paint() }
 	private var uppercase: Boolean = true
 		set(value) {
 			invalidate() // redraw the keyboard when changing case
 			field = value
 		}
-	private val backspaceIcon = VectorDrawableCompat.create(resources, R.drawable.backspace_icon, null) as VectorDrawableCompat
-	private val shiftIcon = VectorDrawableCompat.create(resources, R.drawable.shift_icon, null) as VectorDrawableCompat
-	private val enterIcon = VectorDrawableCompat.create(resources, R.drawable.enter_icon, null) as VectorDrawableCompat
-	private val spaceIcon = VectorDrawableCompat.create(resources, R.drawable.space_icon, null) as VectorDrawableCompat
+	private val iconBackspace = VectorDrawableCompat.create(resources, R.drawable.backspace_icon, null) as VectorDrawableCompat
+	private val iconShift = VectorDrawableCompat.create(resources, R.drawable.shift_icon, null) as VectorDrawableCompat
+	private val iconEnter = VectorDrawableCompat.create(resources, R.drawable.enter_icon, null) as VectorDrawableCompat
+	private val iconSpace = VectorDrawableCompat.create(resources, R.drawable.space_icon, null) as VectorDrawableCompat
 
 	private var circleSize: Int = 0
 		set(value) {
@@ -59,11 +61,12 @@ class NewFlowView(context: Context) : View(context) {
 		val colorArray = context.theme.obtainStyledAttributes(intArrayOf(
 				android.R.attr.colorBackground,
 				android.R.attr.textColorPrimary,
-				android.R.attr.textColorPrimaryInverse
+				android.R.attr.textColorPrimaryInverse,
+				android.R.attr.textColorSecondary,
+				android.R.attr.textColorSecondaryInverse
 		))
 		background.paint.color = colorArray.getColor(0, 0xFF00FF)
-		paintArray[0].color = colorArray.getColor(1, 0xFF00FF) // TODO: what are these errors?
-		paintArray[1].color = colorArray.getColor(2, 0xFF00FF)
+		paintArray.forEachIndexed { index, paint -> paint.color = colorArray.getColor(index + 1, 0xFF00FF) }
 		colorArray.recycle()
 
 		circleList.forEach { it.paint.color = resources.getColor(R.color.primary) }
@@ -73,6 +76,7 @@ class NewFlowView(context: Context) : View(context) {
 			paint.flags = Paint.ANTI_ALIAS_FLAG
 		}
 		keyRegions.filter { "aeiou".contains(it.char) }.forEach { it.paintIndex = 1 }
+		keyRegionsSecondary.filter { "24569".contains(it.char) }.forEach { it.paintIndex = 3 }
 		keyRegions[BACKSPACE_INDEX].function = { inputConnection.deleteSurroundingText(1, 0) }
 		keyRegions[SHIFT_INDEX].function = { uppercase = !uppercase }
 		keyRegions[ENTER_INDEX].function = { inputConnection.performEditorAction(EditorInfo.IME_ACTION_DONE) }
@@ -105,10 +109,11 @@ class NewFlowView(context: Context) : View(context) {
 		circleList[4].bounds = getBounds(Pair(4, 3), padding)
 		background.setBounds(0, 0, width, height)
 		keyRegions.forEachIndexed { i, keyRegion -> keyRegion.rect.set(getBounds(i)) }
-		backspaceIcon.bounds = getBounds(BACKSPACE_INDEX, circleSize / 4)
-		shiftIcon.bounds = getBounds(SHIFT_INDEX, circleSize / 4)
-		enterIcon.bounds = getBounds(ENTER_INDEX, circleSize / 4)
-		spaceIcon.bounds = getBounds(SPACE_INDEX, circleSize / 4)
+		keyRegionsSecondary.forEachIndexed { index, keyRegion -> keyRegion.rect.set(getBounds(index)) }
+		iconBackspace.bounds = getBounds(BACKSPACE_INDEX, circleSize / 4)
+		iconShift.bounds = getBounds(SHIFT_INDEX, circleSize / 4)
+		iconEnter.bounds = getBounds(ENTER_INDEX, circleSize / 4)
+		iconSpace.bounds = getBounds(SPACE_INDEX, circleSize / 4)
 	}
 
 	override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -129,10 +134,11 @@ class NewFlowView(context: Context) : View(context) {
 					paintArray[it.paintIndex]
 			)
 		}
-		backspaceIcon.draw(canvas)
-		shiftIcon.draw(canvas)
-		enterIcon.draw(canvas)
-		spaceIcon.draw(canvas)
+//		keyRegionsSecondary.forEach { canvas.drawText(it.char.toString(), it.rect.exactCenterX(), it.rect.exactCenterY(), paintArray[it.paintIndex]) }
+		iconBackspace.draw(canvas)
+		iconShift.draw(canvas)
+		iconEnter.draw(canvas)
+		iconSpace.draw(canvas)
 	}
 
 	lateinit var inputConnection: InputConnection
@@ -142,14 +148,17 @@ class NewFlowView(context: Context) : View(context) {
 	@SuppressLint("ClickableViewAccessibility")
 	override fun onTouchEvent(event: MotionEvent?): Boolean {
 		if (event == null) return true
-		val keyRegion = keyRegions.find { it.rect.contains(event.x.roundToInt(), event.y.roundToInt()) }
-				?: return true
+		val indexFound = keyRegions.indexOfFirst { it.rect.contains(event.x.roundToInt(), event.y.roundToInt()) }
+		if (indexFound < 0) return true
+		val keyRegion = keyRegions[indexFound]
+//		val keyRegion = keyRegions.find { it.rect.contains(event.x.roundToInt(), event.y.roundToInt()) }
+//				?: return true
 		when (event.action) {
 			ACTION_DOWN -> {
 				alreadyCommitted = false
 				if (keyRegion.function != null) return true
 				downRunnable = Runnable {
-					inputConnection.commitText(keyRegion.char.toUpperCase().toString(), 1)
+					inputConnection.commitText(keyRegionsSecondary[indexFound].char.toString(), 1)
 					alreadyCommitted = true
 					uppercase = false
 				}
