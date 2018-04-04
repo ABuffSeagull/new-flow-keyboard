@@ -187,6 +187,13 @@ class NewFlowView(context: Context) : View(context) {
 		when (event.action) {
 			ACTION_DOWN -> {
 				alreadyCommitted = false
+				if (indexFound == BACKSPACE_INDEX) {
+					downRunnable = Runnable {
+						inputConnection.deleteSurroundingText(1, 0)
+						postDelayed(downRunnable, 100)
+					}
+					postDelayed(downRunnable, 500)
+				}
 				if (keyFunction != null) return true
 				downRunnable = Runnable {
 					inputConnection.commitText(keyCharSecondary.toString(), 1)
