@@ -3,8 +3,7 @@ package org.abuffseagull.newflow
 import android.annotation.SuppressLint
 import android.os.Handler
 import android.view.MotionEvent
-import android.view.MotionEvent.ACTION_DOWN
-import android.view.MotionEvent.ACTION_UP
+import android.view.MotionEvent.*
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
@@ -12,12 +11,12 @@ import kotlin.math.roundToInt
 
 class NewFlowTouchListener : View.OnTouchListener {
 	lateinit var inputConnection: InputConnection
+	private lateinit var view: NewFlowView
 	private val handlerThread = Handler()
 	private var keyHeldAction: Runnable? = null
 	private var textAlreadyCommitted = false
 	private var indexFound = 0
 	private var keyFunction: (() -> Unit)? = null
-	private lateinit var view: NewFlowView
 	/**
 	 * Called when a touch event is dispatched to a view. This allows listeners to
 	 * get a chance to respond before the target view.
@@ -52,6 +51,7 @@ class NewFlowTouchListener : View.OnTouchListener {
 		return when (event.action) {
 			ACTION_DOWN -> handleActionDown(keyCharSecondary)
 			ACTION_UP -> handleActionUp(keyCharPrimary)
+			ACTION_MOVE -> handleActionMove()
 			else -> false
 		}
 	}
@@ -62,16 +62,14 @@ class NewFlowTouchListener : View.OnTouchListener {
 			keyHeldAction = Runnable {
 				inputConnection.deleteSurroundingText(1, 0)
 				handlerThread.postDelayed(keyHeldAction, 100) // TODO: un-magic-ify
-			}
-			handlerThread.postDelayed(keyHeldAction, 500) // TODO: un-magic-ify
+			}.also { handlerThread.postDelayed(it, 500) } // TODO: un-magic-ify
 		}
 		if (keyFunction != null) return true
 		keyHeldAction = Runnable {
 			inputConnection.commitText(keyCharSecondary.toString(), 1)
 			textAlreadyCommitted = true
 			view.uppercaseToggle = false
-		}
-		handlerThread.postDelayed(keyHeldAction, 500) // TODO: un-magic-ify
+		}.also { handlerThread.postDelayed(it, 500) } // TODO: un-magic-ify
 		return true
 	}
 
@@ -85,6 +83,12 @@ class NewFlowTouchListener : View.OnTouchListener {
 		inputConnection.commitText((if (view.uppercaseToggle) keyCharPrimary.toUpperCase() else keyCharPrimary).toString(), 1)
 		view.uppercaseToggle = false
 		return true
+	}
+
+	private fun handleActionMove(): Boolean {
+		return true
+		@Suppress("UNREACHABLE_CODE")
+		TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
 	}
 
 }

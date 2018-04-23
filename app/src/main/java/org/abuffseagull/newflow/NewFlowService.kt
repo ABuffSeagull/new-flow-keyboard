@@ -3,7 +3,6 @@ package org.abuffseagull.newflow
 import android.annotation.SuppressLint
 import android.inputmethodservice.InputMethodService
 import android.util.Log
-import android.view.View
 import android.view.inputmethod.EditorInfo
 
 /**
@@ -14,25 +13,28 @@ const val TAG = "FlowTag"
 class NewFlowService : InputMethodService() {
 	private lateinit var newFlowView: NewFlowView
 	private lateinit var newFlowTouchListener: NewFlowTouchListener
+	override fun onCreate() {
+		super.onCreate()
+		newFlowTouchListener = NewFlowTouchListener() // NOTE: Should this go here, or sometime later?
+	}
+
+	override fun onCreateInputView() = NewFlowView(this).also { newFlowView = it }
 	/**
-	 * Create and return the view hierarchy used for the input area (such as
-	 * a soft keyboard).  This will be called once, when the input area is
-	 * first displayed.  You can return null to have no input area; the default
-	 * implementation returns null.
+	 * Called to inform the input method that text input has started in an
+	 * editor.  You should use this callback to initialize the state of your
+	 * input to match the state of the editor given to it.
 	 *
-	 *
-	 * To control when the input view is displayed, implement
-	 * [.onEvaluateInputViewShown].
-	 * To change the input view after the first one is created by this
-	 * function, use [.setInputView].
+	 * @param attribute The attributes of the editor that input is starting
+	 * in.
+	 * @param restarting Set to true if input is restarting in the same
+	 * editor such as because the application has changed the text in
+	 * the editor.  Otherwise will be false, indicating this is a new
+	 * session with the editor.
 	 */
-	@SuppressLint("ClickableViewAccessibility")
-	override fun onCreateInputView(): View {
-		newFlowView = NewFlowView(this)
-		newFlowTouchListener = NewFlowTouchListener().apply { inputConnection = currentInputConnection }
-		newFlowView.setOnTouchListener(newFlowTouchListener)
-		return newFlowView
-	} // = NewFlowView(this).apply { inputConnection = currentInputConnection }.also { newFlowView = it }
+	override fun onStartInput(attribute: EditorInfo?, restarting: Boolean) {
+		Log.i(TAG, "onStartInput called, restarting $restarting")
+		newFlowTouchListener.inputConnection = currentInputConnection
+	}
 
 	/**
 	 * Called when the input view is being shown and input has started on
@@ -45,10 +47,10 @@ class NewFlowService : InputMethodService() {
 	 * @param restarting Set to true if we are restarting input on the
 	 * same text field as before.
 	 */
+	@SuppressLint("ClickableViewAccessibility")
 	override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
 		Log.i(TAG, "onStartInputView called, restarting: $restarting")
-//		newFlowView.inputConnection = currentInputConnection
-		newFlowTouchListener.inputConnection = currentInputConnection
+		newFlowView.setOnTouchListener(newFlowTouchListener)
 		newFlowView.setToStartingState()
 	}
 }

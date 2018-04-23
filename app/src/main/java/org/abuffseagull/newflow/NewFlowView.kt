@@ -78,7 +78,7 @@ class NewFlowView(context: Context) : View(context) {
 			paint.textAlign = Paint.Align.CENTER
 			paint.flags = Paint.ANTI_ALIAS_FLAG
 		}
-		// TODO: should these be sized according to the screen?
+		// NOTE: should these be sized according to the screen? or maybe circle size?
 		paintArray[0].textSize = 70f
 		paintArray[1].textSize = 70f
 		paintArray[2].textSize = 50f
@@ -169,7 +169,7 @@ class NewFlowView(context: Context) : View(context) {
 
 	private fun drawText(canvas: Canvas) {
 		// TODO: these numbers suck, un-magic-ify them
-		// TODO: Look into static layouts, maybe better for performance?
+		// NOTE: Look into static layouts, maybe better for performance?
 		val primaryDisplayArray = if (!secondaryToggle) keyRegionsPrimary else keyRegionsSecondary
 		val secondaryDisplayArray = if (!secondaryToggle) keyRegionsSecondary else keyRegionsPrimary
 		for ((char, rect, paintIndex) in primaryDisplayArray) {
@@ -191,9 +191,8 @@ class NewFlowView(context: Context) : View(context) {
 	}
 
 	fun find(coords: Pair<Int, Int>) = keyRegionsPrimary.indexOfFirst { it.rect.contains(coords.first, coords.second) }
-	fun getPrimaryAndSecondaryChars(indexFound: Int): Pair<Char, Char> {
-		val charPrimary = (if (secondaryToggle) keyRegionsSecondary[indexFound] else keyRegionsPrimary[indexFound]).char
-		val charSecondary = (if (secondaryToggle) keyRegionsPrimary[indexFound] else keyRegionsSecondary[indexFound]).char
-		return Pair(charPrimary, charSecondary)
-	}
+	fun getPrimaryAndSecondaryChars(indexFound: Int) = Pair(
+			(if (secondaryToggle) keyRegionsSecondary[indexFound] else keyRegionsPrimary[indexFound]).char,
+			(if (secondaryToggle) keyRegionsPrimary[indexFound] else keyRegionsSecondary[indexFound]).char
+	)
 }
