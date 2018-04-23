@@ -1,6 +1,5 @@
 package org.abuffseagull.newflow
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Resources
 import android.graphics.Canvas
@@ -10,19 +9,14 @@ import android.graphics.drawable.ShapeDrawable
 import android.graphics.drawable.shapes.OvalShape
 import android.graphics.drawable.shapes.RectShape
 import android.support.graphics.drawable.VectorDrawableCompat
-import android.view.MotionEvent
-import android.view.MotionEvent.*
 import android.view.View
-import android.view.inputmethod.EditorInfo
-import android.view.inputmethod.InputConnection
-import kotlin.math.roundToInt
 
 /**
  * This is the View class for the keyboard, which shows everything on screen
  * Created by abuffseagull on 3/28/18.
  */
 
-data class KeyRegion(val char: Char, val rect: Rect = Rect(), var paintIndex: Int = 0, var function: (() -> Unit)? = null)
+data class KeyRegion(val char: Char, val rect: Rect = Rect(), var paintIndex: Int = 0)
 
 const val KEY_LIST = "?xwvyb ,therm .caiolp#ksnudj z'gfq "
 const val KEY_LIST_SECONDARY = "!@()%   :123/  ;456+& $789-  =\"0#* "
@@ -43,12 +37,12 @@ class NewFlowView(context: Context) : View(context) {
 	private val keyRegionsSecondary = Array(KEYBOARD_HEIGHT_SIZE * KEYBOARD_ROW_SIZE) { KeyRegion(KEY_LIST_SECONDARY[it]) }
 	private var keyboardHeight = 0
 	private val paintArray = Array(4) { Paint() }
-	private var uppercaseToggle = true
+	var uppercaseToggle = true
 		set(value) {
 			invalidate() // redraw the keyboard when changing case
 			field = value
 		}
-	private var secondaryToggle = false
+	var secondaryToggle = false
 		set(value) {
 			invalidate()
 			field = value
@@ -91,10 +85,6 @@ class NewFlowView(context: Context) : View(context) {
 		paintArray[3].textSize = 50f
 		keyRegionsPrimary.filter { "aeiou".contains(it.char) }.forEach { it.paintIndex = 1 }
 		keyRegionsSecondary.filter { "24569".contains(it.char) }.forEach { it.paintIndex = 1 }
-		keyRegionsPrimary[BACKSPACE_INDEX].function = { inputConnection.deleteSurroundingText(1, 0) }
-		keyRegionsPrimary[SHIFT_INDEX].function = { uppercaseToggle = !uppercaseToggle }
-		keyRegionsPrimary[ENTER_INDEX].function = { inputConnection.performEditorAction(EditorInfo.IME_ACTION_DONE) }
-		keyRegionsPrimary[SECONDARY_INDEX].function = { secondaryToggle = !secondaryToggle }
 	}
 
 	fun setToStartingState() {
@@ -103,10 +93,16 @@ class NewFlowView(context: Context) : View(context) {
 	}
 
 	/**
-	 * This is called during layout when the size of this view has changed.
-	 * width and height SHOULD be the size of the entire screen, but not completely sure
+	 * This is called during layout when the size of this view has changed. If
+	 * you were just added to the view hierarchy, you're called with the old
+	 * values of 0.
+	 *
+	 * @param w Current width of this view.
+	 * @param h Current height of this view.
+	 * @param oldw Old width of this view.
+	 * @param oldh Old height of this view.
 	 */
-	override fun onSizeChanged(width: Int, height: Int, oldw: Int, oldh: Int) {
+	override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
 		getVowelBounds()
 		background.setBounds(0, 0, width, height)
 		keyRegionsPrimary.forEachIndexed { i, keyRegion -> keyRegion.rect.set(getBoundsFromIndex(i)) }
@@ -144,12 +140,18 @@ class NewFlowView(context: Context) : View(context) {
 			(pair.second + 1) * circleSize - padding
 	)
 
+
 	override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
 		val screenWidth = Resources.getSystem().displayMetrics.widthPixels
 		circleSize = screenWidth / KEYBOARD_ROW_SIZE
 		setMeasuredDimension(Resources.getSystem().displayMetrics.widthPixels, circleSize * 5)
 	}
 
+	/**
+	 * Implement this to do your drawing.
+	 *
+	 * @param canvas the canvas on which the background will be drawn
+	 */
 	override fun onDraw(canvas: Canvas?) {
 		if (canvas == null) return
 		background.draw(canvas)
@@ -188,57 +190,10 @@ class NewFlowView(context: Context) : View(context) {
 		}
 	}
 
-	lateinit var inputConnection: InputConnection
-	private var keyHeldAction: Runnable? = null
-	private var textAlreadyCommitted = false
-	// TODO: Make the click override or whatever
-	@SuppressLint("ClickableViewAccessibility")
-	override fun onTouchEvent(event: MotionEvent?): Boolean {
-		if (event == null) return true
-		val indexFound = keyRegionsPrimary.indexOfFirst { it.rect.contains(event.x.roundToInt(), event.y.roundToInt()) }
-		if (indexFound < 0) return true
-		val keyCharPrimary = (if (secondaryToggle) keyRegionsSecondary[indexFound] else keyRegionsPrimary[indexFound]).char
-		val keyCharSecondary = (if (secondaryToggle) keyRegionsPrimary[indexFound] else keyRegionsSecondary[indexFound]).char
-		val keyFunction = keyRegionsPrimary[indexFound].function
-				?: keyRegionsSecondary[indexFound].function
-		// TODO: un-magic-ify this and maybe move to own handler for own thread?
-		return when (event.action) {
-			ACTION_DOWN -> handleActionDown(indexFound, keyCharSecondary, keyFunction)
-			ACTION_UP -> handleActionUp(keyCharPrimary, keyFunction)
-//			ACTION_MOVE -> Log.i(TAG, "Finger move")
-//			else -> Log.i(TAG, "What did I get? $event")
-			else -> false
-		}
-	}
-
-	private fun handleActionDown(indexFound: Int, keyCharSecondary: Char, keyFunction: (() -> Unit)?): Boolean {
-		textAlreadyCommitted = false
-		if (indexFound == BACKSPACE_INDEX) {
-			keyHeldAction = Runnable {
-				inputConnection.deleteSurroundingText(1, 0)
-				postDelayed(keyHeldAction, 100)
-			}
-			postDelayed(keyHeldAction, 500) // TODO: un-magic-ify this
-		}
-		if (keyFunction != null) return true
-		keyHeldAction = Runnable {
-			inputConnection.commitText(keyCharSecondary.toString(), 1)
-			textAlreadyCommitted = true
-			uppercaseToggle = false
-		}
-		postDelayed(keyHeldAction, 500)
-		return true
-	}
-
-	private fun handleActionUp(keyCharPrimary: Char, keyFunction: (() -> Unit)?): Boolean {
-		if (keyHeldAction != null) {
-			removeCallbacks(keyHeldAction)
-			keyHeldAction = null
-		}
-		if (textAlreadyCommitted) return true
-		keyFunction?.let { it(); return true }
-		inputConnection.commitText(if (uppercaseToggle) keyCharPrimary.toUpperCase().toString() else keyCharPrimary.toString(), 1)
-		uppercaseToggle = false
-		return true
+	fun find(coords: Pair<Int, Int>) = keyRegionsPrimary.indexOfFirst { it.rect.contains(coords.first, coords.second) }
+	fun getPrimaryAndSecondaryChars(indexFound: Int): Pair<Char, Char> {
+		val charPrimary = (if (secondaryToggle) keyRegionsSecondary[indexFound] else keyRegionsPrimary[indexFound]).char
+		val charSecondary = (if (secondaryToggle) keyRegionsPrimary[indexFound] else keyRegionsSecondary[indexFound]).char
+		return Pair(charPrimary, charSecondary)
 	}
 }
