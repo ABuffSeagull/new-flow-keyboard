@@ -80,7 +80,10 @@ class NewFlowTouchListener : View.OnTouchListener {
 		}
 		if (textAlreadyCommitted) return true
 		keyFunction?.let { it(); return true }
-		inputConnection.commitText((if (view.uppercaseToggle) keyCharPrimary.toUpperCase() else keyCharPrimary).toString(), 1)
+		inputConnection.commitText(
+			(if (view.uppercaseToggle) keyCharPrimary.toUpperCase() else keyCharPrimary).toString(),
+			1
+		)
 		view.uppercaseToggle = false
 		return true
 	}

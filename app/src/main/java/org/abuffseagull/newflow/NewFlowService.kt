@@ -15,7 +15,8 @@ class NewFlowService : InputMethodService() {
 	private lateinit var newFlowTouchListener: NewFlowTouchListener
 	override fun onCreate() {
 		super.onCreate()
-		newFlowTouchListener = NewFlowTouchListener() // NOTE: Should this go here, or sometime later?
+		newFlowTouchListener =
+				NewFlowTouchListener() // NOTE: Should this go here, or sometime later?
 	}
 
 	override fun onCreateInputView() = NewFlowView(this).also { newFlowView = it }

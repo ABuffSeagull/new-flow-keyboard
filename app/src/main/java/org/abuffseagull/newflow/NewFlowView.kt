@@ -33,8 +33,10 @@ const val SECONDARY_INDEX = 3 * KEYBOARD_ROW_SIZE + 0
 class NewFlowView(context: Context) : View(context) {
 	private val background = ShapeDrawable(RectShape())
 	private val circleList = Array(5) { ShapeDrawable(OvalShape()) } // 5 cause vowels
-	private val keyRegionsPrimary = Array(KEYBOARD_HEIGHT_SIZE * KEYBOARD_ROW_SIZE) { KeyRegion(KEY_LIST[it]) }
-	private val keyRegionsSecondary = Array(KEYBOARD_HEIGHT_SIZE * KEYBOARD_ROW_SIZE) { KeyRegion(KEY_LIST_SECONDARY[it]) }
+	private val keyRegionsPrimary =
+		Array(KEYBOARD_HEIGHT_SIZE * KEYBOARD_ROW_SIZE) { KeyRegion(KEY_LIST[it]) }
+	private val keyRegionsSecondary =
+		Array(KEYBOARD_HEIGHT_SIZE * KEYBOARD_ROW_SIZE) { KeyRegion(KEY_LIST_SECONDARY[it]) }
 	private var keyboardHeight = 0
 	private val paintArray = Array(4) { Paint() }
 	var uppercaseToggle = true
@@ -47,10 +49,17 @@ class NewFlowView(context: Context) : View(context) {
 			invalidate()
 			field = value
 		}
-	private val iconBackspace = VectorDrawableCompat.create(resources, R.drawable.backspace_icon, null) as VectorDrawableCompat
-	private val iconShift = VectorDrawableCompat.create(resources, R.drawable.shift_icon, null) as VectorDrawableCompat
-	private val iconEnter = VectorDrawableCompat.create(resources, R.drawable.enter_icon, null) as VectorDrawableCompat
-	private val iconSpace = VectorDrawableCompat.create(resources, R.drawable.space_icon, null) as VectorDrawableCompat
+	private val iconBackspace = VectorDrawableCompat.create(
+		resources,
+		R.drawable.backspace_icon,
+		null
+	) as VectorDrawableCompat
+	private val iconShift =
+		VectorDrawableCompat.create(resources, R.drawable.shift_icon, null) as VectorDrawableCompat
+	private val iconEnter =
+		VectorDrawableCompat.create(resources, R.drawable.enter_icon, null) as VectorDrawableCompat
+	private val iconSpace =
+		VectorDrawableCompat.create(resources, R.drawable.space_icon, null) as VectorDrawableCompat
 
 	private var circleSize: Int = 0
 		set(value) {
@@ -59,15 +68,19 @@ class NewFlowView(context: Context) : View(context) {
 		}
 
 	init {
-		val colorArray = context.theme.obtainStyledAttributes(intArrayOf(
+		val colorArray = context.theme.obtainStyledAttributes(
+			intArrayOf(
 				android.R.attr.colorBackground,
 				android.R.attr.textColorPrimary,
 				android.R.attr.textColorPrimaryInverse,
 				android.R.attr.textColorSecondary,
 				android.R.attr.textColorSecondaryInverse
-		))
+			)
+		)
 		background.paint.color = colorArray.getColor(0, 0xFF00FF)
-		paintArray.forEachIndexed { index, paint -> paint.color = colorArray.getColor(index + 1, 0xFF00FF) }
+		paintArray.forEachIndexed { index, paint ->
+			paint.color = colorArray.getColor(index + 1, 0xFF00FF)
+		}
 		colorArray.recycle()
 
 		circleList.forEach {
@@ -106,7 +119,11 @@ class NewFlowView(context: Context) : View(context) {
 		getVowelBounds()
 		background.setBounds(0, 0, width, height)
 		keyRegionsPrimary.forEachIndexed { i, keyRegion -> keyRegion.rect.set(getBoundsFromIndex(i)) }
-		keyRegionsSecondary.forEachIndexed { index, keyRegion -> keyRegion.rect.set(getBoundsFromIndex(index)) }
+		keyRegionsSecondary.forEachIndexed { index, keyRegion ->
+			keyRegion.rect.set(
+				getBoundsFromIndex(index)
+			)
+		}
 		getIconBounds()
 	}
 
@@ -118,10 +135,10 @@ class NewFlowView(context: Context) : View(context) {
 	}
 
 	private fun getBoundsFromIndex(index: Int, padding: Int = 0) = Rect(
-			(index % KEYBOARD_ROW_SIZE) * circleSize + padding,
-			(index / KEYBOARD_ROW_SIZE) * circleSize + padding,
-			(index % KEYBOARD_ROW_SIZE + 1) * circleSize - padding,
-			(index / KEYBOARD_ROW_SIZE + 1) * circleSize - padding
+		(index % KEYBOARD_ROW_SIZE) * circleSize + padding,
+		(index / KEYBOARD_ROW_SIZE) * circleSize + padding,
+		(index % KEYBOARD_ROW_SIZE + 1) * circleSize - padding,
+		(index / KEYBOARD_ROW_SIZE + 1) * circleSize - padding
 	)
 
 	private fun getVowelBounds() {
@@ -134,10 +151,10 @@ class NewFlowView(context: Context) : View(context) {
 	}
 
 	private fun getBoundsFromPair(pair: Pair<Int, Int>, padding: Int = 0) = Rect(
-			pair.first * circleSize + padding,
-			pair.second * circleSize + padding,
-			(pair.first + 1) * circleSize - padding,
-			(pair.second + 1) * circleSize - padding
+		pair.first * circleSize + padding,
+		pair.second * circleSize + padding,
+		(pair.first + 1) * circleSize - padding,
+		(pair.second + 1) * circleSize - padding
 	)
 
 
@@ -174,25 +191,27 @@ class NewFlowView(context: Context) : View(context) {
 		val secondaryDisplayArray = if (!secondaryToggle) keyRegionsSecondary else keyRegionsPrimary
 		for ((char, rect, paintIndex) in primaryDisplayArray) {
 			canvas.drawText(
-					(if (uppercaseToggle) char.toUpperCase() else char).toString(),
-					rect.exactCenterX() - 10f,
-					rect.exactCenterY() + 35f,
-					paintArray[paintIndex]
+				(if (uppercaseToggle) char.toUpperCase() else char).toString(),
+				rect.exactCenterX() - 10f,
+				rect.exactCenterY() + 35f,
+				paintArray[paintIndex]
 			)
 		}
 		for ((char, rect, paintIndex) in secondaryDisplayArray) {
 			canvas.drawText(
-					(if (uppercaseToggle) char.toUpperCase() else char).toString(),
-					rect.exactCenterX() + 35f,
-					rect.exactCenterY() - 5f,
-					paintArray[paintIndex + 2]
+				(if (uppercaseToggle) char.toUpperCase() else char).toString(),
+				rect.exactCenterX() + 35f,
+				rect.exactCenterY() - 5f,
+				paintArray[paintIndex + 2]
 			)
 		}
 	}
 
-	fun find(coords: Pair<Int, Int>) = keyRegionsPrimary.indexOfFirst { it.rect.contains(coords.first, coords.second) }
+	fun find(coords: Pair<Int, Int>) =
+		keyRegionsPrimary.indexOfFirst { it.rect.contains(coords.first, coords.second) }
+
 	fun getPrimaryAndSecondaryChars(indexFound: Int) = Pair(
-			(if (secondaryToggle) keyRegionsSecondary[indexFound] else keyRegionsPrimary[indexFound]).char,
-			(if (secondaryToggle) keyRegionsPrimary[indexFound] else keyRegionsSecondary[indexFound]).char
+		(if (secondaryToggle) keyRegionsSecondary[indexFound] else keyRegionsPrimary[indexFound]).char,
+		(if (secondaryToggle) keyRegionsPrimary[indexFound] else keyRegionsSecondary[indexFound]).char
 	)
 }
