@@ -17,15 +17,7 @@ class NewFlowTouchListener : View.OnTouchListener {
 	private var textAlreadyCommitted = false
 	private var indexFound = 0
 	private var keyFunction: (() -> Unit)? = null
-	/**
-	 * Called when a touch event is dispatched to a view. This allows listeners to
-	 * get a chance to respond before the target view.
-	 *
-	 * @param v The view the touch event has been dispatched to.
-	 * @param event The MotionEvent object containing full information about
-	 * the event.
-	 * @return True if the listener has consumed the event, false otherwise.
-	 */
+
 	@SuppressLint("ClickableViewAccessibility")
 	override fun onTouch(v: View?, event: MotionEvent?): Boolean {
 		if (v == null || event == null) return true
@@ -91,7 +83,7 @@ class NewFlowTouchListener : View.OnTouchListener {
 	private fun handleActionMove(): Boolean {
 		return true
 		@Suppress("UNREACHABLE_CODE")
-		TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+		TODO("not implemented")
 	}
 
 }

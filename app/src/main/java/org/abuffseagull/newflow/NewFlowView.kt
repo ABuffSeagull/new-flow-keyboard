@@ -12,31 +12,48 @@ import android.support.graphics.drawable.VectorDrawableCompat
 import android.view.View
 
 /**
- * This is the View class for the keyboard, which shows everything on screen
- * Created by abuffseagull on 3/28/18.
+ * This is the square region that encompasses a keyboard key
+ * @param char The character this key represents
+ * @param rect The bounding box for the key
+ * @param paintIndex The index for the paint array, to get it's color
  */
-
 data class KeyRegion(val char: Char, val rect: Rect = Rect(), var paintIndex: Int = 0)
 
-const val KEY_LIST = "?xwvyb ,therm .caiolp#ksnudj z'gfq "
+/**
+ * The list of primary keyboard keys in the order of the keyboard
+ */
+const val KEY_LIST_PRIMARY = "?xwvyb ,therm .caiolp#ksnudj z'gfq "
+/**
+ * The list of secondary keyboard keys in the order of the keyboard
+ */
 const val KEY_LIST_SECONDARY = "!@()%   :123/  ;456+& $789-  =\"0#* "
-const val KEYBOARD_ROW_SIZE = 7
+/**
+ * How many columns the keyboard has
+ */
+const val KEYBOARD_ROW_LENGTH = 7
+/**
+ * How many rows the keyboard has
+ */
 const val KEYBOARD_HEIGHT_SIZE = 5 // TODO: come up with a better name
 
-// row * KEYBOARD_ROW_SIZE + column
-const val BACKSPACE_INDEX = 0 * KEYBOARD_ROW_SIZE + 6
-const val SHIFT_INDEX = 4 * KEYBOARD_ROW_SIZE + 0
-const val ENTER_INDEX = 4 * KEYBOARD_ROW_SIZE + 6
-const val SPACE_INDEX = 1 * KEYBOARD_ROW_SIZE + 6
-const val SECONDARY_INDEX = 3 * KEYBOARD_ROW_SIZE + 0
+// row * KEYBOARD_ROW_LENGTH + column
+const val BACKSPACE_INDEX = 0 * KEYBOARD_ROW_LENGTH + 6
+const val SHIFT_INDEX = 4 * KEYBOARD_ROW_LENGTH + 0
+const val ENTER_INDEX = 4 * KEYBOARD_ROW_LENGTH + 6
+const val SPACE_INDEX = 1 * KEYBOARD_ROW_LENGTH + 6
+const val SECONDARY_INDEX = 3 * KEYBOARD_ROW_LENGTH + 0
 
+/**
+ * This is the main view for the entire keyboard
+ * @param context The context for view
+ */
 class NewFlowView(context: Context) : View(context) {
 	private val background = ShapeDrawable(RectShape())
 	private val circleList = Array(5) { ShapeDrawable(OvalShape()) } // 5 cause vowels
 	private val keyRegionsPrimary =
-		Array(KEYBOARD_HEIGHT_SIZE * KEYBOARD_ROW_SIZE) { KeyRegion(KEY_LIST[it]) }
+		Array(KEYBOARD_HEIGHT_SIZE * KEYBOARD_ROW_LENGTH) { KeyRegion(KEY_LIST_PRIMARY[it]) }
 	private val keyRegionsSecondary =
-		Array(KEYBOARD_HEIGHT_SIZE * KEYBOARD_ROW_SIZE) { KeyRegion(KEY_LIST_SECONDARY[it]) }
+		Array(KEYBOARD_HEIGHT_SIZE * KEYBOARD_ROW_LENGTH) { KeyRegion(KEY_LIST_SECONDARY[it]) }
 	private var keyboardHeight = 0
 	private val paintArray = Array(4) { Paint() }
 	var uppercaseToggle = true
@@ -100,21 +117,14 @@ class NewFlowView(context: Context) : View(context) {
 		keyRegionsSecondary.filter { "24569".contains(it.char) }.forEach { it.paintIndex = 1 }
 	}
 
+	/**
+	 * Sets it back to the primary keys, and in uppercase
+	 */
 	fun setToStartingState() {
 		uppercaseToggle = true
 		secondaryToggle = false
 	}
 
-	/**
-	 * This is called during layout when the size of this view has changed. If
-	 * you were just added to the view hierarchy, you're called with the old
-	 * values of 0.
-	 *
-	 * @param w Current width of this view.
-	 * @param h Current height of this view.
-	 * @param oldw Old width of this view.
-	 * @param oldh Old height of this view.
-	 */
 	override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
 		getVowelBounds()
 		background.setBounds(0, 0, width, height)
@@ -135,10 +145,10 @@ class NewFlowView(context: Context) : View(context) {
 	}
 
 	private fun getBoundsFromIndex(index: Int, padding: Int = 0) = Rect(
-		(index % KEYBOARD_ROW_SIZE) * circleSize + padding,
-		(index / KEYBOARD_ROW_SIZE) * circleSize + padding,
-		(index % KEYBOARD_ROW_SIZE + 1) * circleSize - padding,
-		(index / KEYBOARD_ROW_SIZE + 1) * circleSize - padding
+		(index % KEYBOARD_ROW_LENGTH) * circleSize + padding,
+		(index / KEYBOARD_ROW_LENGTH) * circleSize + padding,
+		(index % KEYBOARD_ROW_LENGTH + 1) * circleSize - padding,
+		(index / KEYBOARD_ROW_LENGTH + 1) * circleSize - padding
 	)
 
 	private fun getVowelBounds() {
@@ -160,15 +170,10 @@ class NewFlowView(context: Context) : View(context) {
 
 	override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
 		val screenWidth = Resources.getSystem().displayMetrics.widthPixels
-		circleSize = screenWidth / KEYBOARD_ROW_SIZE
+		circleSize = screenWidth / KEYBOARD_ROW_LENGTH
 		setMeasuredDimension(Resources.getSystem().displayMetrics.widthPixels, circleSize * 5)
 	}
 
-	/**
-	 * Implement this to do your drawing.
-	 *
-	 * @param canvas the canvas on which the background will be drawn
-	 */
 	override fun onDraw(canvas: Canvas?) {
 		if (canvas == null) return
 		background.draw(canvas)
@@ -207,9 +212,17 @@ class NewFlowView(context: Context) : View(context) {
 		}
 	}
 
-	fun find(coords: Pair<Int, Int>) =
-		keyRegionsPrimary.indexOfFirst { it.rect.contains(coords.first, coords.second) }
+	/**
+	 * @param coordinates The x,y coordinates of the touch
+	 * @return the index of the [KeyRegion]
+	 */
+	fun find(coordinates: Pair<Int, Int>) =
+		keyRegionsPrimary.indexOfFirst { it.rect.contains(coordinates.first, coordinates.second) }
 
+	/**
+	 * @param indexFound The index of the [KeyRegion] that was touched
+	 * @return [Pair] of chars, of the primary and secondary regions
+	 */
 	fun getPrimaryAndSecondaryChars(indexFound: Int) = Pair(
 		(if (secondaryToggle) keyRegionsSecondary[indexFound] else keyRegionsPrimary[indexFound]).char,
 		(if (secondaryToggle) keyRegionsPrimary[indexFound] else keyRegionsSecondary[indexFound]).char
