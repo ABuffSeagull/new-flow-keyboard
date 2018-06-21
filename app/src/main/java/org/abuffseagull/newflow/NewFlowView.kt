@@ -22,26 +22,40 @@ data class KeyRegion(val char: Char, val rect: Rect = Rect(), var paintIndex: In
 /**
  * The list of primary keyboard keys in the order of the keyboard
  */
-const val KEY_LIST_PRIMARY = "?xwvyb ,therm .caiolp#ksnudj z'gfq "
+const val KEY_LIST_PRIMARY: String = "?xwvyb ,therm .caiolp#ksnudj z'gfq "
 /**
  * The list of secondary keyboard keys in the order of the keyboard
  */
-const val KEY_LIST_SECONDARY = "!@()%   :123/  ;456+& $789-  =\"0#* "
+const val KEY_LIST_SECONDARY: String = "!@()%   :123/  ;456+& $789-  =\"0#* "
 /**
  * How many columns the keyboard has
  */
-const val KEYBOARD_ROW_LENGTH = 7
+const val KEYBOARD_ROW_LENGTH: Int = 7
 /**
  * How many rows the keyboard has
  */
-const val KEYBOARD_HEIGHT_SIZE = 5 // TODO: come up with a better name
+const val KEYBOARD_HEIGHT_SIZE: Int = 5 // TODO: come up with a better name
 
-// row * KEYBOARD_ROW_LENGTH + column
-const val BACKSPACE_INDEX = 0 * KEYBOARD_ROW_LENGTH + 6
-const val SHIFT_INDEX = 4 * KEYBOARD_ROW_LENGTH + 0
-const val ENTER_INDEX = 4 * KEYBOARD_ROW_LENGTH + 6
-const val SPACE_INDEX = 1 * KEYBOARD_ROW_LENGTH + 6
-const val SECONDARY_INDEX = 3 * KEYBOARD_ROW_LENGTH + 0
+/**
+ *
+ */// row * KEYBOARD_ROW_LENGTH + column
+const val BACKSPACE_INDEX: Int = 0 * KEYBOARD_ROW_LENGTH + 6
+/**
+ *
+ */
+const val SHIFT_INDEX: Int = 4 * KEYBOARD_ROW_LENGTH + 0
+/**
+ *
+ */
+const val ENTER_INDEX: Int = 4 * KEYBOARD_ROW_LENGTH + 6
+/**
+ *
+ */
+const val SPACE_INDEX: Int = 1 * KEYBOARD_ROW_LENGTH + 6
+/**
+ *
+ */
+const val SECONDARY_INDEX: Int = 3 * KEYBOARD_ROW_LENGTH + 0
 
 /**
  * This is the main view for the entire keyboard
@@ -56,12 +70,18 @@ class NewFlowView(context: Context) : View(context) {
 		Array(KEYBOARD_HEIGHT_SIZE * KEYBOARD_ROW_LENGTH) { KeyRegion(KEY_LIST_SECONDARY[it]) }
 	private var keyboardHeight = 0
 	private val paintArray = Array(4) { Paint() }
-	var uppercaseToggle = true
+	/**
+	 *
+	 */
+	var uppercaseToggle: Boolean = true
 		set(value) {
 			invalidate() // redraw the keyboard when changing case
 			field = value
 		}
-	var secondaryToggle = false
+	/**
+	 *
+	 */
+	var secondaryToggle: Boolean = false
 		set(value) {
 			invalidate()
 			field = value
@@ -125,6 +145,9 @@ class NewFlowView(context: Context) : View(context) {
 		secondaryToggle = false
 	}
 
+	/**
+	 *
+	 */
 	override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
 		getVowelBounds()
 		background.setBounds(0, 0, width, height)
@@ -168,12 +191,18 @@ class NewFlowView(context: Context) : View(context) {
 	)
 
 
+	/**
+	 *
+	 */
 	override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
 		val screenWidth = Resources.getSystem().displayMetrics.widthPixels
 		circleSize = screenWidth / KEYBOARD_ROW_LENGTH
 		setMeasuredDimension(Resources.getSystem().displayMetrics.widthPixels, circleSize * 5)
 	}
 
+	/**
+	 *
+	 */
 	override fun onDraw(canvas: Canvas?) {
 		if (canvas == null) return
 		background.draw(canvas)
@@ -216,14 +245,14 @@ class NewFlowView(context: Context) : View(context) {
 	 * @param coordinates The x,y coordinates of the touch
 	 * @return the index of the [KeyRegion]
 	 */
-	fun find(coordinates: Pair<Int, Int>) =
+	fun find(coordinates: Pair<Int, Int>): Int =
 		keyRegionsPrimary.indexOfFirst { it.rect.contains(coordinates.first, coordinates.second) }
 
 	/**
 	 * @param indexFound The index of the [KeyRegion] that was touched
 	 * @return [Pair] of chars, of the primary and secondary regions
 	 */
-	fun getPrimaryAndSecondaryChars(indexFound: Int) = Pair(
+	fun getPrimaryAndSecondaryChars(indexFound: Int): Pair<Char, Char> = Pair(
 		(if (secondaryToggle) keyRegionsSecondary[indexFound] else keyRegionsPrimary[indexFound]).char,
 		(if (secondaryToggle) keyRegionsPrimary[indexFound] else keyRegionsSecondary[indexFound]).char
 	)

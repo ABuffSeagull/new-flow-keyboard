@@ -9,7 +9,13 @@ import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
 import kotlin.math.roundToInt
 
+/**
+ *
+ */
 class NewFlowTouchListener : View.OnTouchListener {
+	/**
+	 *
+	 */
 	lateinit var inputConnection: InputConnection
 	private lateinit var view: NewFlowView
 	private val handlerThread = Handler()
@@ -18,6 +24,9 @@ class NewFlowTouchListener : View.OnTouchListener {
 	private var indexFound = 0
 	private var keyFunction: (() -> Unit)? = null
 
+	/**
+	 *
+	 */
 	@SuppressLint("ClickableViewAccessibility")
 	override fun onTouch(v: View?, event: MotionEvent?): Boolean {
 		if (v == null || event == null) return true
