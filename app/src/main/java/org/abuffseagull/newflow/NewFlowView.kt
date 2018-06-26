@@ -36,9 +36,10 @@ const val KEYBOARD_ROW_LENGTH: Int = 7
  */
 const val KEYBOARD_HEIGHT_SIZE: Int = 5 // TODO: come up with a better name
 
+// row * KEYBOARD_ROW_LENGTH + column
 /**
  *
- */// row * KEYBOARD_ROW_LENGTH + column
+ */
 const val BACKSPACE_INDEX: Int = 0 * KEYBOARD_ROW_LENGTH + 6
 /**
  *
