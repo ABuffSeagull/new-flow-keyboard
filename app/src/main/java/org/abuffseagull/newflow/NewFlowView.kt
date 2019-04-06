@@ -10,6 +10,8 @@ import android.graphics.drawable.shapes.OvalShape
 import android.graphics.drawable.shapes.RectShape
 import android.support.graphics.drawable.VectorDrawableCompat
 import android.view.View
+import kotlin.math.roundToInt
+import kotlin.properties.Delegates
 
 /**
  * This is the square region that encompasses a keyboard key
@@ -71,22 +73,10 @@ class NewFlowView(context: Context) : View(context) {
 		Array(KEYBOARD_HEIGHT_SIZE * KEYBOARD_ROW_LENGTH) { KeyRegion(KEY_LIST_SECONDARY[it]) }
 	private var keyboardHeight = 0
 	private val paintArray = Array(4) { Paint() }
-	/**
-	 *
-	 */
-	var uppercaseToggle: Boolean = true
-		set(value) {
-			invalidate() // redraw the keyboard when changing case
-			field = value
-		}
-	/**
-	 *
-	 */
-	var secondaryToggle: Boolean = false
-		set(value) {
-			invalidate()
-			field = value
-		}
+
+	var uppercaseToggle: Boolean by Delegates.observable(true) { _, _, _ -> invalidate() }
+	var secondaryToggle: Boolean by Delegates.observable(false) { _, _, _ -> invalidate() }
+
 	private val iconBackspace = VectorDrawableCompat.create(
 		resources,
 		R.drawable.backspace_icon,
@@ -134,8 +124,8 @@ class NewFlowView(context: Context) : View(context) {
 		paintArray[1].textSize = 70f
 		paintArray[2].textSize = 50f
 		paintArray[3].textSize = 50f
-		keyRegionsPrimary.filter { "aeiou".contains(it.char) }.forEach { it.paintIndex = 1 }
-		keyRegionsSecondary.filter { "24569".contains(it.char) }.forEach { it.paintIndex = 1 }
+		keyRegionsPrimary.filter { it.char in "aeiou" }.forEach { it.paintIndex = 1 }
+		keyRegionsSecondary.filter { it.char in "24569" }.forEach { it.paintIndex = 1 }
 	}
 
 	/**
