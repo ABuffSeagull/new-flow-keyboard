@@ -23,7 +23,7 @@ class NewFlowService : InputMethodService() {
 	override fun onCreate() {
 		super.onCreate()
 		newFlowTouchListener =
-				NewFlowTouchListener() // NOTE: Should this go here, or sometime later?
+			NewFlowTouchListener() // NOTE: Should this go here, or sometime later?
 	}
 
 	/**
